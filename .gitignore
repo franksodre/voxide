@@ -19,6 +19,9 @@ bin/
 # ENV
 .env
 
+# Json stuff
+*.json
+
 # vweb and database
 *.db
 *.js
