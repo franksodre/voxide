@@ -33,3 +33,9 @@ pub fn (f File) score(now Epoch) Rank {
 	}
 }
 
+pub fn (mut f []File) sort_files_by_score(t Epoch) {
+	f.sort_with_compare(fn [t] (a &File, b &File) int {
+		return sort(a, b, t)
+	})
+}
+
