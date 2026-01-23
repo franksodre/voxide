@@ -4,23 +4,22 @@ module database
 import db.sqlite
 import orm
 import arrays { flatten }
-
 import time
 
 pub struct Database {
-	path		string	// location of the database file
+	path string // location of the database file
 	// this will be mut for no
-	pub mut:
-		db		sqlite.DB
+pub mut:
+	db sqlite.DB
 }
 
 // obviously i should use env vars
 pub fn open(path string) !Database {
 	mut db := sqlite.connect(path)!
 
-	return Database {
+	return Database{
 		path: path
-		db:		db
+		db:   db
 	}
 }
 
@@ -62,10 +61,9 @@ pub fn (data Database) select_all() ![]File {
 fn (data Database) find_files(path string) ![]File {
 	qb := orm.new_query[File](data.db)
 
-	files :=
-		qb
-			.where('path LIKE ?','%${path}%')!
-			.query()!
+	files := qb
+		.where('path LIKE ?', '%${path}%')!
+		.query()!
 
 	return files
 }
@@ -73,11 +71,10 @@ fn (data Database) find_files(path string) ![]File {
 fn (data Database) find_file(path string) !File {
 	qb := orm.new_query[File](data.db)
 
-	file :=
-		qb
-			.where('path = ?', path)!
-			.query()!
-			.first()
+	file := qb
+		.where('path = ?', path)!
+		.query()!
+		.first()
 
 	return file
 }
@@ -91,7 +88,7 @@ pub fn (data Database) add(path string, incr Rank, now Epoch) ! {
 		return
 	}
 	if file.len == 0 {
-		data.insert(File { path: path score: incr last_accessed: now })!
+		data.insert(File{ path: path, score: incr, last_accessed: now })!
 		return
 	}
 }
@@ -105,28 +102,29 @@ pub fn (data Database) update(path string, incr Rank, now Epoch) ! {
 	file.sort_files_by_score(now)
 	best_match := file.first()
 	new_score := best_match.score + incr
+
 	qb
 		.set('score = ?, last_accessed = ?', new_score, now)!
 		.where('path = ?', best_match.path)!
 		.update()!
-
 }
 
 pub fn (data Database) query(path string) ! {
+	// check like an exact matches
 	mut file := data.find_with_args(path) or {
 		eprintln('malformed path, i do think its the right err')
 		return
 	}
-
-	println(file)
 	now := time.now().unix()
-	if file.len != 0 {
-		data.update(path, 1.0, now)!
-		println(path)
-	} else{
-		data.add(path, 1.0, now)!
-		println(path)
-	}
+	// // it's basically checking the same thing above - absurd
+	// if file.len == 0 {
+	// 	data.add(path, 1.0, now)!
+	// 	return
+	// }
+	file.sort_files_by_score(now)
+	best_match := file.first()
+	println(best_match)
+	println("${best_match.path}/") // hack. fix later
 }
 
 pub fn (db Database) find_matches(path string) ?[]File {
@@ -140,25 +138,29 @@ pub fn (db Database) find_matches(path string) ?[]File {
 }
 
 pub fn (db Database) find_with_args(path string) ?[]File {
-		args := path.split(" ")
-		mut matches := [][]File{}
-		for arg in args {
-			if x := db.find_matches(arg) {
-				matches << x
-			} else {
-				none
-			}
-		}
-		mut res := []File{}
-		// this is ugly, i try something better later, am just trying get the job done
-		if !path.contains_u8(`/`) && args.len > 1 {
-			for x in 1..matches.len {
-				res = intersect(matches[0], matches[x])
-			}
-			return res
-		} else if path.contains_u8(`/`) && args.len == 1 {
-			return flatten[File](matches)
+	args := path.split(' ')
+	if args.len == 0 {
+		return none
+	}
+	mut matches := [][]File{}
+	for arg in args {
+		if x := db.find_matches(arg) {
+			matches << x
 		} else {
-			return none
+			none
 		}
+	}
+	mut res := []File{}
+	// this is ugly, i try something better later, am just trying get the job done
+	// TODO: some issues here, handle later
+	if !path.contains_u8(`/`) && args.len > 1 {
+		for x in 1 .. matches.len {
+			res = intersect(matches[0], matches[x])
+		}
+		return res
+	} else if args.len == 1 {
+		return flatten[File](matches)
+	} else {
+		return none
+	}
 }

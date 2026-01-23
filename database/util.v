@@ -20,9 +20,15 @@ pub fn (e Epoch) sub_clamp_zero(n Epoch) Epoch {
 fn filter_files_by_name(files []File) []File {
 	mut matches := []File{}
 
+	// changing some stuff just to test on directories.
 	for file in files {
 		file_name := file.path.split('/').filter(|x| x != '').last()
-		if os.file_name(file.path) == file_name {
+		// dir_name := os.dir(file.path).split('/').filter(|x| x != '').last()
+		// it's os.file_name
+		// if  dir_name == file_name {
+		// 	matches << file
+		// }
+		if  os.file_name(file.path) == file_name {
 			matches << file
 		}
 	}

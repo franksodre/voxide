@@ -51,3 +51,10 @@ Fix indentation inconsistency (mix of tabs/spaces in the struct)
 Add meaningful variable names instead of f for file
 The timestamp conversion could be time.now().unix_time() (check V's API)
 Add a -h/--help flag handler
+
+MUST DO:
+  handle when i'm already in the target dir.
+
+if i'm returing a Optional i shouldn't interpret it like an error, so don't panic or nothing like that in options
+if the `find` function doesn't return nothing(and it's ok in you're case) just handle it proprely(Handling properly doesn't mean throwing errors)
+a could thing to do is that you may send an error(msg) at the end but handling all the edge cases until there. - i think
