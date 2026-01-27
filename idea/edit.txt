@@ -54,6 +54,7 @@ Add a -h/--help flag handler
 
 MUST DO:
   handle when i'm already in the target dir.
+  env variables.
 
 if i'm returing a Optional i shouldn't interpret it like an error, so don't panic or nothing like that in options
 if the `find` function doesn't return nothing(and it's ok in you're case) just handle it proprely(Handling properly doesn't mean throwing errors)

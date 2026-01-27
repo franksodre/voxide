@@ -1,29 +1,49 @@
 module command
 
 import os
-// import time
+import db.sqlite
+
 import database { open }
+
+const home_dir = os.home_dir()
+const db_path = home_dir + '/Documents/Code/learn_v/notes_zoxide/file.db'
 
 // am gonna make you useful path
 // flag should handle subcommands, i'll handle it properly in future
-struct Open implements Run {}
+struct Open implements Run {
+	args []string
+	conn sqlite.DB
+}
 
-pub fn (cmd Open) run() ! {
-	mut db := open('file.db') or {
+// am not sure about this
+fn new_open() !&Open {
+	args := os.args
+
+	mut db := open(db_path) or {
 		eprintln('voxide: Failed to open database, err: ${err}')
 		exit(0)
 	}
+
 	db.create()!
+
 	defer { db.close() }
 
-	path := os.args[2]
-	// now := time.now().unix()
-
-	db.query(path)!
+	return &Open{
+		args: args
+		conn: db.db
+	}
 }
 
-// database connection
-// get best matching path
-// jump to the path location
 
+pub fn (o Open) query() ! {
+	args := o.args
+	if args.len == 0 {
+			eprintln('voxide: A path must be provided.')
+			exit(1)
+		}
+	for arg in args {
+		println(arg)
+	}
+}
 
+pub fn (cmd Open) run() ! {}

@@ -5,14 +5,7 @@ pub interface Run {
 	run() !
 }
 
-// enum
-pub enum CmdOption {
-	show
-	open
-	remove
-}
-
-type Command = Show | Open | Remove
+pub type Command = Show | Open | Remove
 
 pub fn (cmd Command) execute() ! {
 	match cmd {
