@@ -60,12 +60,3 @@ fn query_path(query string) !string {
 	 return dir
 }
 
-pub fn intersect(a []File, b []File) []File {
-	mut b_set := map[string]bool{}
-
-	for x in b {
-		b_set[x.path] = true
-	}
-
-	return a.filter(it.path in b_set)
-}

@@ -38,4 +38,3 @@ pub fn (mut f []File) sort_files_by_score(t Epoch) {
 		return sort(a, b, t)
 	})
 }
-

@@ -2,9 +2,6 @@
 module database
 
 import db.sqlite
-import orm
-import arrays { flatten }
-import time
 
 pub struct Database {
 	path string // location of the database file
@@ -27,24 +24,29 @@ pub fn (mut data Database) close() {
 	data.db.close() or {}
 }
 
+// create table File if it doesn't exists already
+@[inline]
 pub fn (data &Database) create() ! {
 	sql data.db {
 		create table File
 	}!
 }
 
+@[inline]
 pub fn (data Database) drop() ! {
 	sql data.db {
 		drop table File
 	}!
 }
 
+@[inline]
 pub fn (data Database) insert(file File) ! {
 	sql data.db {
 		insert file into File
 	}!
 }
 
+@[inline]
 pub fn (data Database) delete(path string) ! {
 	sql data.db {
 		delete from File where path == path
@@ -52,16 +54,23 @@ pub fn (data Database) delete(path string) ! {
 }
 
 pub fn (data Database) exists(path string) !bool {
+	// just for now
+	query := path
 	p := sql data.db {
-		select from File where path == path
-	}!.first() // the path should just be unique
+		select from File where path == query
+	}! // the path should just be unique
 
-	if p.path != ''  {
-		return true
+
+	if x := p[0] {
+		if x.path != '' {
+			return true
+		}
 	}
 	return false
 }
 
+
+@[inline]
 pub fn (data Database) select_all() ![]File {
 	all := sql data.db {
 		select from File
@@ -70,30 +79,26 @@ pub fn (data Database) select_all() ![]File {
 }
 
 // SEARCHES
+@[inline]
 pub fn (data Database) find_files(path string) ![]File {
-	qb := orm.new_query[File](data.db)
-
-	files := qb
-		.where('path LIKE ?', '%${path}%')!
-		.query()!
+	pattern := '%' + path + '%'
+	files := sql data.db {
+		select from File where path like pattern
+	}!
 
 	return files
 }
 
-fn (data Database) find_file(path string) !File {
-	qb := orm.new_query[File](data.db)
-
-	file := qb
-		.where('path = ?', path)!
-		.query()!
-		.first()
-
-	return file
+// [obsolete]?
+@[inline]
+pub fn (data Database) find_file(path string) !File {
+	// just for now
+	query := path
+	return sql data.db {
+		select from File where path == query
+	}![0]
 }
 
-// check if exists
-// yes: update and return
-// no: create and return
 pub fn (data Database) add(path string, incr Rank, now Epoch) ! {
 	if data.exists(path)! {
 		data.update(path, incr, now)!
@@ -103,9 +108,8 @@ pub fn (data Database) add(path string, incr Rank, now Epoch) ! {
 	}
 }
 
+@[inline]
 pub fn (data Database) update(path string, incr Rank, now Epoch) ! {
-	// If a value lives in the database, its transformations should live there too.
-	// No [select] here
 	sql data.db {
 		update File set score = score + incr
 		where path == path
