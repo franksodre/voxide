@@ -56,7 +56,7 @@ pub fn (o Query) query() ! {
 		} else {
 			mut current := o.conn.find_files(args[0])!
 			current.sort_files_by_score(now)
-			println(current.first())
+			println(current.first().path)
 		}
 	} else if dir_path == '' {
 		// this may not work as expected
