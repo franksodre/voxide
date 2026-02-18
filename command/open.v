@@ -51,11 +51,13 @@ pub fn (o Query) query() ! {
 	}
 
 	if args[0].contains(path_separator) {
-		path := path_exists(args[0]) or {
-			eprintln(err)
-			exit(1)
+		if p := path_exists(args[0]) {
+			println(os.abs_path(p))
+		} else {
+			mut current := o.conn.find_files(args[0])!
+			current.sort_files_by_score(now)
+			println(current.first())
 		}
-		println(os.abs_path(path))
 	} else if dir_path == '' {
 		// this may not work as expected
 		mut current := o.conn.find_files(args[0]) or {
