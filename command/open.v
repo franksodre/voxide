@@ -43,13 +43,9 @@ pub fn (o Query) query() ! {
 	if args.len == 1 {
 		for entry in entries {
 			dir := os.join_path_single(cwd, entry)
-			if os.is_dir(dir) {
-				dir_name := dir.split(path_separator).last()
-
-				if dir_name == args[0] {
-					dir_path = dir
-					break
-				}
+			if os.is_dir(dir) && entry == args[0] {
+				dir_path = dir
+				break
 			}
 		}
 	}
