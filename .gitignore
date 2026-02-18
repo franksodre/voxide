@@ -10,6 +10,11 @@ notes_zoxide
 # Ignore binary output folders
 bin/
 
+# ignore those folder
+ox/
+idea/
+cli/
+
 # Ignore common editor/system specific metadata
 .DS_Store
 .idea/
