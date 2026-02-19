@@ -12,6 +12,8 @@ pub mut:
 
 // obviously i should use env vars
 pub fn open(path string) !Database {
+  // should check if database exists and if not create it.
+  // not here
 	mut db := sqlite.connect(path)!
 
 	return Database{

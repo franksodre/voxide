@@ -28,7 +28,35 @@ fn new_query() !&Query {
 	}
 }
 
-pub fn (o Query) query() ! {
+fn (o Query) best_match(queries []string, now i64) ![]string {
+	mut query := o.conn.find_files(queries[0])!
+	for q in queries[1..] {
+		query = intersect(query, o.conn.find_files(q)!)
+	}
+	if query.len == 0 {
+		eprintln("voxide: no match found")
+		exit(1)
+	}
+  // TODO: queries to strict paths may not depend on the score for better results.
+	query.sort_files_by_score(now)
+	return query.map(it.path)
+}
+
+fn find_in_cwd(query string) ?string {
+	cwd := os.getwd()
+	entries := os.ls(cwd) or { [] }
+
+	for entry in entries {
+		dir := os.join_path_single(cwd, entry)
+		if os.is_dir(dir) && entry == query {
+			return dir
+		}
+	}
+
+	return none
+}
+
+pub fn (o Query) query() !string {
 	args := o.args
 	now := time.now().unix()
 
@@ -37,71 +65,29 @@ pub fn (o Query) query() ! {
 		exit(1)
 	}
 
-	cwd := os.getwd()
-	entries := os.ls(cwd) or { [] }
-	mut dir_path := ''
-	if args.len == 1 {
-		for entry in entries {
-			dir := os.join_path_single(cwd, entry)
-			if os.is_dir(dir) && entry == args[0] {
-				dir_path = dir
-				break
-			}
-		}
-	}
 
 	if args[0].contains(path_separator) {
 		if p := path_exists(args[0]) {
-			println(os.abs_path(p))
-		} else {
-			mut current := o.conn.find_files(args[0])!
-			current.sort_files_by_score(now)
-			println(current.first().path)
+			return os.abs_path(p)
 		}
-	} else if dir_path == '' {
-		// this may not work as expected
-		mut current := o.conn.find_files(args[0]) or {
-			eprintln('voxide: no match found')
-			exit(1)
-		}
-
-		if args.len > 1 {
-			for arg in args[1..] {
-				if current.len == 0 {
-					break
-				}
-				current = intersect(current, o.conn.find_files(arg)!)
-			}
-		}
-
-		// sort by score
-		current.sort_files_by_score(now)
-
-		mut matched_file := false
-		for file in current {
-			// to_lower is really necessary, i determine what's necessary and what's not.
-			dir_name := get_dir_name(file.path).to_lower()
-			if dir_name.starts_with(args[0].to_lower()) {
-				matched_file = true
-				println(file.path)
-				break
-			}
-		}
-
-		// ugly but works
-		if !matched_file {
-			curr := current[0] or {
-				eprintln('voxide: no match found')
-				exit(1)
-			}
-			println(curr.path)
-		}
-	} else {
-		println(dir_path)
+		o.best_match(args, now)!.first()
 	}
+
+	if p := find_in_cwd(args[0]) {
+		return p
+	}
+
+	matches := o.best_match(args, now)!
+	for path in matches {
+		if dir_basename(path).to_lower().starts_with(args[0]) {
+			return path
+		}
+	}
+
+	return matches.first()
 }
 
 pub fn (cmd Query) run() ! {
 	query := new_query()!
-	query.query()!
+	println(query.query()!)
 }

@@ -23,7 +23,7 @@ pub fn path_exists(path string) !string {
 	return error("voxide: path not found")
 }
 
-pub fn get_dir_name(path string) string {
+pub fn dir_basename(path string) string {
 	if os.is_dir(path) {
 		return path.split(path_separator).last()
 	}
