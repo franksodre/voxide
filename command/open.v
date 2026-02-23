@@ -5,6 +5,7 @@ import time
 import database { Database, open }
 
 const path_separator = '/'
+const cwd = os.getwd()
 
 struct Query implements Run {
 	args []string
@@ -39,11 +40,10 @@ fn (o Query) best_match(queries []string, now i64) ![]string {
 	}
   // TODO: queries to strict paths may not depend on the score for better results.
 	query.sort_files_by_score(now)
-	return query.map(it.path)
+	return query.filter(it.path != cwd).map(it.path)
 }
 
 fn find_in_cwd(query string) ?string {
-	cwd := os.getwd()
 	entries := os.ls(cwd) or { [] }
 
 	for entry in entries {
@@ -77,14 +77,15 @@ pub fn (o Query) query() !string {
 		return p
 	}
 
-	matches := o.best_match(args, now)!
-	for path in matches {
+	paths := o.best_match(args, now)!
+	for path in paths {
 		if dir_basename(path).to_lower().starts_with(args[0]) {
 			return path
 		}
+		// should return an error?
 	}
 
-	return matches.first()
+	return paths.first()
 }
 
 pub fn (cmd Query) run() ! {
