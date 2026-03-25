@@ -29,6 +29,17 @@ fn new_query() !&Query {
 	}
 }
 
+// path_exists already does something like it
+// TODO: handle `cwd` in path_exists too
+fn (o Query) filter_path (paths []string) []string {
+	p := paths.filter(os.exists(it) && it != cwd).map(it)
+	if p.len == 0 {
+		eprintln("voxide: no match found")
+		exit(1)
+	}
+	return p
+}
+
 fn (o Query) best_match(queries []string, now i64) ![]string {
 	mut query := o.conn.find_files(queries[0])!
 	for q in queries[1..] {
@@ -40,12 +51,19 @@ fn (o Query) best_match(queries []string, now i64) ![]string {
 	}
   // TODO: queries to strict paths may not depend on the score for better results.
 	query.sort_files_by_score(now)
-	return query.filter(it.path != cwd).map(it.path)
+	rest := query.filter(it.path != cwd).map(it.path)
+
+	if rest.len == 0 {
+		eprintln("voxide: you are already at the only match.")
+		exit(0)
+	}
+	return rest
 }
 
 fn find_in_cwd(query string) ?string {
 	entries := os.ls(cwd) or { [] }
 
+	// path resolution
 	for entry in entries {
 		dir := os.join_path_single(cwd, entry)
 		if os.is_dir(dir) && entry == query {
@@ -65,6 +83,9 @@ pub fn (o Query) query() !string {
 		exit(1)
 	}
 
+	if p := find_in_cwd(args[0]) {
+		return p
+	}
 
 	if args[0].contains(path_separator) {
 		if p := path_exists(args[0]) {
@@ -73,16 +94,12 @@ pub fn (o Query) query() !string {
 		o.best_match(args, now)!.first()
 	}
 
-	if p := find_in_cwd(args[0]) {
-		return p
-	}
-
-	paths := o.best_match(args, now)!
+	paths := o.filter_path(o.best_match(args, now)!)
 	for path in paths {
 		if dir_basename(path).to_lower().starts_with(args[0]) {
 			return path
 		}
-		// should return an error?
+		// should return an error.
 	}
 
 	return paths.first()
