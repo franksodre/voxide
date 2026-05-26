@@ -1,15 +1,18 @@
 module command
 
-import os
+import cli
 import database { open }
 
-pub struct Remove implements Run {}
-
-pub fn (cmd Remove) run() ! {
-	mut db := open('file.db') or {
+pub fn run_remove(cmd cli.Command) ! {
+	mut db := open(db_path) or {
 		eprintln('voxide: Failed to open database, err: ${err}')
 		exit(0)
 	}
-	defer { db.close() }
-	db.delete(os.args[2])!
+	// defer { db.close() }
+	db.delete(cmd.args[0]) or {
+		eprintln("voxide: failed to `delete` path.")
+		exit(1)
+	}
+
+	println("voxide: path deleted.")
 }

@@ -1,10 +1,11 @@
 module command
+
 import os
 import time
-
+import cli
 import database { Database, open }
 
-pub struct Add implements Run {
+pub struct Add {
 	path string
 	mut:
 		conn Database
@@ -40,7 +41,7 @@ fn (add Add) add() ! {
 	}
 }
 
-fn (add Add) run() ! {
+pub fn run_add(cmd cli.Command) ! {
 	cmd_add := new_add()!
 	cmd_add.add()!
 }

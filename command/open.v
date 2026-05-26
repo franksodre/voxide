@@ -1,5 +1,6 @@
 module command
 
+import cli
 import os
 import time
 import database { Database, open }
@@ -7,15 +8,15 @@ import database { Database, open }
 const path_separator = '/'
 const cwd = os.getwd()
 
-struct Query implements Run {
-	args []string
+struct Query {
+	input []string
 mut:
 	conn Database
 }
 
 // am not sure about this
 fn new_query() !&Query {
-	args := os.args[2..]
+	input := os.args[2..]
 	mut db := open(db_path) or {
 		eprintln('voxide: Failed to open database, err: ${err}')
 		exit(1)
@@ -24,37 +25,44 @@ fn new_query() !&Query {
 	db.create()!
 
 	return &Query{
-		args: args
-		conn: db
+		input: input
+		conn:  db
 	}
 }
 
 // path_exists already does something like it
-// TODO: handle `cwd` in path_exists too
-fn (o Query) filter_path (paths []string) []string {
+
+// Filters paths in the database, checking if they exist in the filesystem
+// excluding the cwd in the search.
+fn (query Query) filter_path(paths []string) []string {
 	p := paths.filter(os.exists(it) && it != cwd).map(it)
 	if p.len == 0 {
-		eprintln("voxide: no match found")
+		eprintln('voxide: no match found')
 		exit(1)
 	}
 	return p
 }
 
-fn (o Query) best_match(queries []string, now i64) ![]string {
-	mut query := o.conn.find_files(queries[0])!
+fn (query Query) best_match(queries []string, now i64) ![]string {
+	// find paths
+	mut matches := query.conn.find_files(queries[0])!
+
+	// intersect queries
 	for q in queries[1..] {
-		query = intersect(query, o.conn.find_files(q)!)
+		matches = intersect(matches, query.conn.find_files(q)!)
 	}
-	if query.len == 0 {
-		eprintln("voxide: no match found")
+	// check if it didn't find anything.
+	if matches.len == 0 {
+		eprintln('voxide: no match found')
 		exit(1)
 	}
-  // TODO: queries to strict paths may not depend on the score for better results.
-	query.sort_files_by_score(now)
-	rest := query.filter(it.path != cwd).map(it.path)
+	// TODO: queries to strict paths may not depend on the score for better results.
+	// sort by score
+	matches.sort_files_by_score(now)
+	rest := matches.filter(it.path != cwd).map(it.path)
 
 	if rest.len == 0 {
-		eprintln("voxide: you are already at the only match.")
+		eprintln('voxide: you are already at the only match.')
 		exit(0)
 	}
 	return rest
@@ -74,38 +82,37 @@ fn find_in_cwd(query string) ?string {
 	return none
 }
 
-pub fn (o Query) query() !string {
-	args := o.args
+pub fn (query Query) query() !string {
+	input := query.input
 	now := time.now().unix()
 
-	if args.len == 0 {
-		eprintln("voxide: A path must be provided [you don't go straight to home yet].")
-		exit(1)
+	if input.len == 0 {
+		return os.home_dir()
 	}
 
-	if p := find_in_cwd(args[0]) {
+	if p := find_in_cwd(input[0]) {
 		return p
 	}
 
-	if args[0].contains(path_separator) {
-		if p := path_exists(args[0]) {
+	if input[0].contains(path_separator) {
+		// println("print 1")
+		if p := path_exists(input[0]) {
 			return os.abs_path(p)
 		}
-		o.best_match(args, now)!.first()
+		query.best_match(input, now)!.first()
 	}
 
-	paths := o.filter_path(o.best_match(args, now)!)
+	paths := query.filter_path(query.best_match(input, now)!)
 	for path in paths {
-		if dir_basename(path).to_lower().starts_with(args[0]) {
+		if dir_basename(path).to_lower().contains(input.last()) { // easy fix -> input.first to input.last()
 			return path
 		}
-		// should return an error.
 	}
-
-	return paths.first()
+	eprintln('voxide: you are already in the only match.')
+	exit(1)
 }
 
-pub fn (cmd Query) run() ! {
+pub fn run_query(cmd cli.Command) ! {
 	query := new_query()!
 	println(query.query()!)
 }

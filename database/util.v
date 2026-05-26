@@ -23,12 +23,7 @@ fn filter_files_by_name(files []File) []File {
 	// changing some stuff just to test on directories.
 	for file in files {
 		file_name := file.path.split('/').filter(|x| x != '').last()
-		// dir_name := os.dir(file.path).split('/').filter(|x| x != '').last()
-		// it's os.file_name
-		// if  dir_name == file_name {
-		// 	matches << file
-		// }
-		if  os.file_name(file.path) == file_name {
+		if os.file_name(file.path) == file_name {
 			matches << file
 		}
 	}
@@ -59,4 +54,3 @@ fn query_path(query string) !string {
 	 // os.chdir(dir) or { panic('voxide: unable to go into $dir') }
 	 return dir
 }
-

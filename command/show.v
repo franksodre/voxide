@@ -1,6 +1,6 @@
 module command
 
-pub struct Show implements Run {}
+pub struct Show {}
 
 pub fn (cmd Show) run() ! {
 	println("Showing...")
