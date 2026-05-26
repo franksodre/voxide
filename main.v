@@ -1,6 +1,6 @@
 module main
 
-import command  { run_query, run_remove, run_add }
+import command  { run_query, run_remove, run_add, run_init }
 import cli
 import os
 
@@ -13,6 +13,11 @@ fn main() {
 		name: 'voxide'
 		description: "Better cd command based on rust's zoxide."
 	}
+	app.add_command(cli.Command{
+		name: 'init'
+		description: "expand to shell."
+		execute: run_init
+	})
 
 	app.add_command(cli.Command{
 		name: 'query'
