@@ -7,36 +7,37 @@ struct Init {
   input string
 }
 
+// TODO: put it into a file and improve the function
 fn fish_expand() string {
   return 'if status is-interactive
-# 1. The Navigation Command (Silent, letting voxide handle errors)
-function vx
-    if test (count $argv) -gt 0; and test "$argv[1]" = "add"; or test "$argv[1]" = "remove"
-	command voxide $argv
-    else
-	set -l target (command voxide $argv)
-	# Only attempt to cd if target is not empty
-	if test -n "$target"
-	    cd "$target"
-	end
+    # 1. The Navigation Command (Silent, letting voxide handle errors)
+    function vx
+        if test (count $argv) -gt 0; and test "$argv[1]" = "add"; or test "$argv[1]" = "remove"
+            command voxide $argv
+        else
+            set -l target (command voxide $argv)
+            # Only attempt to cd if target is not empty
+            if test -n "$target"
+                cd "$target"
+            end
+        end
     end
-end
 
-# 2. The Background Indexer
-function _vx_auto_index
-    if test "$PWD" != "$__vx_last_dir"
-	set -g __vx_last_dir "$PWD"
-	command voxide add "$PWD" >/dev/null 2>&1 &
+    # 2. The Background Indexer
+    function _vx_auto_index
+        if test "$PWD" != "$__vx_last_dir"
+            set -g __vx_last_dir "$PWD"
+            command voxide add "$PWD" >/dev/null 2>&1 &
+        end
     end
-end
 
-# 3. The Event Hook (Clean and Theme-friendly)
-set -g __vx_last_dir $PWD
-function _vx_event_handler --on-event fish_postexec
-    _vx_auto_index
-end
-end
-  '
+    # 3. The Event Hook (Clean and Theme-friendly)
+    set -g __vx_last_dir $PWD
+    function _vx_event_handler --on-event fish_postexec
+        _vx_auto_index
+    end
+
+end'
 }
 
 fn new_init() !&Init {

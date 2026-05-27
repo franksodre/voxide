@@ -9,6 +9,7 @@ notes_zoxide
 
 # Ignore binary output folders
 bin/
+/voxide
 
 # ignore those folder
 ox/
