@@ -18,7 +18,6 @@ cli/
 out/
 performance/
 *.txt
-*.vsh
 
 # Ignore common editor/system specific metadata
 .DS_Store
